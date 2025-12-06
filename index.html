@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minecraft Recipe UI Generator</title>
+    <title>Recursive Recipe Book Generator</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -20,124 +20,135 @@
         .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
         
-        .code-block {
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            background-color: #1e293b;
-            color: #e2e8f0;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            overflow-x: auto;
-            white-space: pre;
+        /* Minecraft-like Button Styles for Preview */
+        .mc-button {
+            background-color: #3c3c3c;
+            color: white;
+            border: 2px solid;
+            border-color: #5e5e5e #1e1e1e #1e1e1e #5e5e5e;
+            transition: background-color 0.1s;
+        }
+        .mc-button:active {
+            border-color: #1e1e1e #5e5e5e #5e5e5e #1e1e1e;
+            background-color: #2b2b2b;
         }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans flex flex-col">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col">
 
     <div class="container mx-auto px-4 py-8 max-w-6xl flex-grow">
         
         <!-- Header -->
         <header class="mb-8 text-center border-b border-slate-800 pb-8">
-            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400 mb-2 flex items-center justify-center gap-3">
-                <i data-lucide="book-open-check" class="w-10 h-10 text-orange-400"></i>
-                Recipe UI Generator
+            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-400 mb-2 flex items-center justify-center gap-3">
+                <i data-lucide="layers" class="w-10 h-10 text-teal-400"></i>
+                Recursive Recipe Book
             </h1>
-            <p class="text-slate-400">Generates a recursive <code>ActionFormData</code> script for your Bedrock Addon.</p>
+            <p class="text-slate-400">Generates a Minecraft Script with full <strong>Back/Exit</strong> navigation history.</p>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <!-- Left Column: Controls -->
-            <div class="lg:col-span-1 space-y-6">
+            <!-- Left Column: Controls (4 cols) -->
+            <div class="lg:col-span-4 space-y-6">
                 <!-- Upload -->
-                <div class="bg-slate-800 rounded-xl p-6 border-2 border-dashed border-slate-600 hover:border-orange-500 transition-colors cursor-pointer text-center relative group">
+                <div class="bg-slate-900 rounded-xl p-6 border-2 border-dashed border-slate-700 hover:border-teal-500 transition-colors cursor-pointer text-center relative group">
                     <input type="file" id="fileInput" accept=".zip" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                     <div class="flex flex-col items-center justify-center gap-4 pointer-events-none">
-                        <div class="bg-slate-700 p-3 rounded-full group-hover:bg-orange-500/20 group-hover:text-orange-400 transition-colors">
-                            <i data-lucide="file-archive" class="w-8 h-8"></i>
+                        <div class="bg-slate-800 p-4 rounded-full group-hover:bg-teal-500/20 group-hover:text-teal-400 transition-colors shadow-lg">
+                            <i data-lucide="archive-restore" class="w-8 h-8"></i>
                         </div>
                         <div>
-                            <h3 class="text-lg font-semibold">Upload Resource Pack</h3>
-                            <p class="text-xs text-slate-400 mt-1">.zip files only</p>
+                            <h3 class="text-lg font-semibold text-teal-100">Upload Recipes.zip</h3>
+                            <p class="text-xs text-slate-500 mt-1">Parses JSONs & builds dependency tree</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Stats & Download -->
-                <div id="statsPanel" class="hidden bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl">
-                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Pack Contents</h3>
-                    <div class="space-y-3 mb-6">
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-300">Custom Recipes</span>
-                            <span class="text-xl font-bold text-orange-400" id="statCount">0</span>
+                <div id="statsPanel" class="hidden bg-slate-900 rounded-xl p-6 border border-slate-800 shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <i data-lucide="file-code-2" class="w-24 h-24"></i>
+                    </div>
+                    
+                    <h3 class="text-xs font-bold text-teal-500 uppercase tracking-widest mb-4">Generation Ready</h3>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-slate-950 p-3 rounded border border-slate-800">
+                            <span class="block text-slate-400 text-xs">Recipes</span>
+                            <span class="block text-xl font-bold text-white" id="statCount">0</span>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-300">Linked Ingredients</span>
-                            <span class="text-xl font-bold text-blue-400" id="statLinks">0</span>
+                        <div class="bg-slate-950 p-3 rounded border border-slate-800">
+                            <span class="block text-slate-400 text-xs">Links</span>
+                            <span class="block text-xl font-bold text-white" id="statLinks">0</span>
                         </div>
                     </div>
                     
-                    <button onclick="downloadScript()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-orange-900/20">
-                        <i data-lucide="download" class="w-5 h-5"></i>
-                        Download recipe_book.js
+                    <button onclick="downloadScript()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-teal-900/20 group">
+                        <i data-lucide="download" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                        Download Script
                     </button>
-                    <p class="text-[10px] text-slate-500 text-center mt-3">Includes <code>ActionFormData</code> logic</p>
+                    <p class="text-[10px] text-slate-500 text-center mt-3">File: <code>recursive_recipe_book.js</code></p>
                 </div>
             </div>
 
-            <!-- Right Column: Visualizer -->
-            <div class="lg:col-span-2 space-y-6">
+            <!-- Right Column: Visualizer (8 cols) -->
+            <div class="lg:col-span-8 space-y-6">
                 
-                <div id="statusMessage" class="hidden p-4 rounded-lg"></div>
+                <div id="statusMessage" class="hidden p-4 rounded-lg bg-slate-900 border border-slate-800"></div>
 
                 <!-- Interface Preview -->
-                <div id="interfacePanel" class="hidden bg-slate-800 rounded-xl border border-slate-700 overflow-hidden flex flex-col h-full min-h-[500px]">
-                    <div class="bg-slate-950 p-4 border-b border-slate-700 flex justify-between items-center">
+                <div id="interfacePanel" class="hidden bg-slate-900 rounded-xl border border-slate-800 overflow-hidden flex flex-col h-full min-h-[600px] shadow-2xl">
+                    
+                    <!-- Sim Header -->
+                    <div class="bg-slate-950 p-4 border-b border-slate-800 flex justify-between items-center">
                         <div class="flex items-center gap-2">
-                            <i data-lucide="gamepad-2" class="w-5 h-5 text-purple-400"></i>
-                            <span class="font-semibold text-slate-200">Simulation: In-Game UI</span>
+                            <i data-lucide="play-circle" class="w-5 h-5 text-teal-400"></i>
+                            <span class="font-semibold text-slate-200">Live Simulation</span>
                         </div>
-                        <div class="text-xs text-slate-500 font-mono">Simulating @minecraft/server-ui</div>
+                        <div class="flex gap-2">
+                            <input type="text" id="simInput" placeholder="Item ID (e.g. os_br:blood_rot_rapier)" 
+                                class="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded px-2 py-1 outline-none focus:border-teal-500 w-64 font-mono">
+                            <button onclick="startSimulation()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded text-xs transition-colors border border-slate-700">
+                                Open
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Search Mockup -->
-                    <div class="p-4 bg-slate-900 border-b border-slate-800 flex gap-2">
-                        <input type="text" id="simInput" placeholder="Enter Item ID (e.g. os_br:blood_rot_rapier)" 
-                             class="flex-grow bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded px-3 py-2 outline-none focus:border-orange-500 font-mono">
-                        <button onclick="simulateUI()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded text-sm transition-colors">
-                            Open Form
-                        </button>
-                    </div>
-
-                    <!-- The Mock Form -->
-                    <div class="flex-grow p-8 bg-[#1a1a1a] flex justify-center items-start overflow-y-auto custom-scroll">
+                    <!-- The Mock Canvas -->
+                    <div class="flex-grow bg-[#1a1a1a] relative flex items-center justify-center p-8 overflow-y-auto custom-scroll">
                         
-                        <div id="mockForm" class="hidden w-full max-w-md bg-[#c6c6c6] text-[#1f1f1f] border-2 border-[#585858] shadow-[4px_4px_0_0_#000]">
-                            <!-- Form Header -->
-                            <div class="bg-[#1f1f1f] text-white p-2 flex items-center gap-2 border-b-2 border-[#585858]">
-                                <span class="font-minecraft text-lg truncate" id="formTitle">Recipe Title</span>
+                        <!-- Breadcrumbs for History -->
+                        <div class="absolute top-4 left-4 right-4 flex gap-2 overflow-x-auto text-xs font-mono text-slate-500 custom-scroll pb-2" id="simBreadcrumbs">
+                            <!-- Injected via JS -->
+                        </div>
+
+                        <!-- Form UI -->
+                        <div id="mockForm" class="hidden w-full max-w-sm bg-[#c6c6c6] text-[#1f1f1f] border-2 border-[#fff] shadow-[6px_6px_0_0_rgba(0,0,0,0.5)] flex flex-col">
+                            
+                            <!-- Header -->
+                            <div class="bg-[#1f1f1f] text-white p-2 border-b-2 border-[#585858] flex justify-between items-center">
+                                <span class="font-bold truncate px-1" id="formTitle">Recipe Title</span>
+                                <button onclick="closeMock()" class="text-slate-400 hover:text-white px-1">✕</button>
                             </div>
                             
-                            <!-- Form Body -->
-                            <div class="p-4 bg-[#c6c6c6]">
-                                <p class="mb-6 font-minecraft leading-relaxed" id="formBody">
-                                    Recipe description goes here...
-                                </p>
+                            <!-- Content -->
+                            <div class="p-4 flex-grow">
+                                <div id="formBody" class="font-mono text-sm mb-6 whitespace-pre-wrap leading-snug">Description...</div>
 
-                                <!-- Button Stack -->
-                                <div id="formButtons" class="space-y-2">
+                                <!-- Button List -->
+                                <div id="formButtons" class="space-y-1">
                                     <!-- Buttons injected here -->
                                 </div>
-                                
-                                <button onclick="closeMock()" class="w-full mt-4 bg-[#3c3c3c] text-white border-2 border-[#1e1e1e] border-t-[#5e5e5e] border-l-[#5e5e5e] px-2 py-2 active:border-t-[#1e1e1e] active:border-l-[#1e1e1e] hover:bg-[#4c4c4c]">
-                                    Close
-                                </button>
                             </div>
                         </div>
 
-                        <div id="emptyState" class="text-slate-600 flex flex-col items-center mt-20">
-                            <i data-lucide="monitor-play" class="w-16 h-16 opacity-20 mb-4"></i>
-                            <p>Enter an item ID to simulate the form.</p>
+                        <!-- Empty State -->
+                        <div id="emptyState" class="text-center opacity-30">
+                            <i data-lucide="gamepad-2" class="w-24 h-24 mx-auto mb-4"></i>
+                            <p class="text-sm font-mono">Waiting for input...</p>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -149,20 +160,24 @@
 
         let recipeDatabase = {};
         let generatedScript = "";
+        
+        // Simulation State
+        let simHistory = []; // Stack of IDs
 
         // --- Event Listeners ---
         document.getElementById('fileInput').addEventListener('change', handleFileUpload);
         document.getElementById('simInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') simulateUI();
+            if (e.key === 'Enter') startSimulation();
         });
 
-        // --- Processing Logic ---
+        // --- Logic ---
+
         async function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             resetUI();
-            showStatus('loading', 'Scanning zip for recipe chains...');
+            showStatus('loading', 'Parsing recursive structures...');
 
             try {
                 const zip = new JSZip();
@@ -178,9 +193,7 @@
                             try {
                                 const json = JSON.parse(text);
                                 const processed = processRecipe(json);
-                                if (processed) {
-                                    recipeDatabase[processed.raw_id] = processed;
-                                }
+                                if (processed) recipeDatabase[processed.raw_id] = processed;
                             } catch (e) {}
                         }));
                     }
@@ -188,28 +201,28 @@
 
                 await Promise.all(promises);
 
-                // Second pass to count potential links for stats
-                Object.values(recipeDatabase).forEach(recipe => {
-                    recipe.ingredients_structured.forEach(ing => {
+                // Calculate links
+                Object.values(recipeDatabase).forEach(r => {
+                    r.ingredients_structured.forEach(ing => {
                         if (recipeDatabase[ing.item]) linkCount++;
                     });
                 });
 
-                // Update Stats
+                // Stats
                 document.getElementById('statCount').textContent = Object.keys(recipeDatabase).length;
                 document.getElementById('statLinks').textContent = linkCount;
 
                 // Generate Script
-                generatedScript = generateActionFormScript(recipeDatabase);
+                generatedScript = generateRecursiveScript(recipeDatabase);
 
-                // Show UI
+                // UI
                 document.getElementById('statusMessage').classList.add('hidden');
                 document.getElementById('statsPanel').classList.remove('hidden');
                 document.getElementById('interfacePanel').classList.remove('hidden');
 
-                // Auto-fill first item
+                // Auto-fill
                 const keys = Object.keys(recipeDatabase);
-                if(keys.length > 0) document.getElementById('simInput').value = keys[0];
+                if (keys.length > 0) document.getElementById('simInput').value = keys[0];
 
             } catch (err) {
                 console.error(err);
@@ -217,7 +230,7 @@
             }
         }
 
-        // --- Core Recipe Parser (Same logic, new context) ---
+        // --- Recipe Processing ---
         function formatIdentifier(id) {
             if (!id) return "Unknown";
             const parts = id.split(':');
@@ -245,7 +258,6 @@
             }
 
             let ingredients = [];
-
             if (type === 'shaped') {
                 const keyMap = root.key;
                 const pattern = root.pattern;
@@ -264,11 +276,10 @@
                 for(let [item, count] of Object.entries(tempMap)) ingredients.push({ item, count });
             } else if (type === 'furnace') {
                 ingredients.push({ item: root.input, count: 1 });
-                if(root.tags.includes('blast_furnace')) station = "Blast Furnace";
             }
 
             const ingText = ingredients.map(i => `${i.count}x ${formatIdentifier(i.item)}`).join(', ');
-            const text = `Station: ${station}\n\nIngredients Required:\n${ingText}`;
+            const text = `Station: ${station}\n\nIngredients:\n${ingText}`;
 
             return {
                 raw_id: rawId,
@@ -279,169 +290,226 @@
             };
         }
 
-        // --- Simulator Logic (Mirroring the generated script) ---
-        function simulateUI() {
+        // --- Simulation Logic (Mirrors the Script) ---
+        function startSimulation() {
+            simHistory = [];
             const input = document.getElementById('simInput').value.trim();
-            if (!input) return;
+            if(input) openForm(input);
+        }
 
+        function openForm(itemId) {
+            const recipe = recipeDatabase[itemId];
             const mockForm = document.getElementById('mockForm');
             const empty = document.getElementById('emptyState');
-            const title = document.getElementById('formTitle');
-            const body = document.getElementById('formBody');
             const btnContainer = document.getElementById('formButtons');
-
-            // Find data
-            const recipe = recipeDatabase[input];
 
             empty.classList.add('hidden');
             mockForm.classList.remove('hidden');
             btnContainer.innerHTML = '';
+            
+            updateBreadcrumbs();
 
+            // 1. Title & Body
             if (!recipe) {
-                // Vanilla or Missing Logic
-                if (input.startsWith('minecraft:')) {
-                    title.textContent = formatIdentifier(input);
-                    body.textContent = "This is a standard Vanilla item.\nIt does not have a custom recipe file in this pack.";
-                } else {
-                    title.textContent = "Item Not Found";
-                    body.textContent = `No recipe found for ID: ${input}`;
-                }
+                document.getElementById('formTitle').textContent = "Unknown Item";
+                document.getElementById('formBody').textContent = `No custom recipe data for: ${itemId}\n\nIt might be a vanilla item or not in the pack.`;
+                
+                // If we have history, show back button
+                if (simHistory.length > 0) addBackButton(btnContainer);
+                addExitButton(btnContainer);
                 return;
             }
 
-            // Valid Recipe
-            title.textContent = recipe.display_name;
-            body.textContent = recipe.script_text; // Pre-formatted text
+            document.getElementById('formTitle').textContent = recipe.display_name;
+            document.getElementById('formBody').textContent = recipe.script_text;
 
-            // Generate "Recursive" Buttons
-            // In the real script, we check if ingredients exist in DB
-            const linkedIngredients = recipe.ingredients_structured.filter(ing => recipeDatabase[ing.item]);
+            // 2. Add Ingredient Buttons (Recursive Links)
+            recipe.ingredients_structured.forEach(ing => {
+                if (recipeDatabase[ing.item]) {
+                    const btn = document.createElement('button');
+                    btn.className = "mc-button w-full px-2 py-2 text-sm text-left flex justify-between items-center group";
+                    btn.innerHTML = `<span>Recipe: ${formatIdentifier(ing.item)}</span> <i data-lucide="chevron-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>`;
+                    
+                    btn.onclick = () => {
+                        simHistory.push(itemId); // Push current to history
+                        openForm(ing.item); // Open new
+                    };
+                    btnContainer.appendChild(btn);
+                }
+            });
 
-            if (linkedIngredients.length > 0) {
-                const label = document.createElement('div');
-                label.className = "text-xs font-bold text-slate-700 uppercase mt-4 mb-2";
-                label.textContent = "Sub-Recipes Available:";
-                btnContainer.appendChild(label);
+            // Spacer
+            if (btnContainer.children.length > 0) {
+                const hr = document.createElement('div');
+                hr.className = "h-px bg-[#585858] my-2";
+                btnContainer.appendChild(hr);
             }
 
-            linkedIngredients.forEach(ing => {
-                const btn = document.createElement('button');
-                const name = formatIdentifier(ing.item);
-                btn.className = "w-full text-left bg-[#3c3c3c] text-white border-2 border-[#1e1e1e] border-t-[#5e5e5e] border-l-[#5e5e5e] px-3 py-2 text-sm mb-2 hover:bg-[#4c4c4c] active:border-t-[#1e1e1e] active:border-l-[#1e1e1e] flex items-center justify-between";
-                btn.innerHTML = `<span>Recipe: ${name}</span> <i data-lucide="chevron-right" class="w-4 h-4"></i>`;
-                
-                // Recursive simulation click
-                btn.onclick = () => {
-                    document.getElementById('simInput').value = ing.item;
-                    simulateUI();
-                };
-                
-                btnContainer.appendChild(btn);
-            });
+            // 3. Back Button (Conditional)
+            if (simHistory.length > 0) {
+                addBackButton(btnContainer);
+            }
+
+            // 4. Exit Button (Always)
+            addExitButton(btnContainer);
+            
             lucide.createIcons();
+        }
+
+        function addBackButton(container) {
+            const btn = document.createElement('button');
+            btn.className = "mc-button w-full px-2 py-2 text-sm text-center font-bold text-yellow-200";
+            btn.textContent = "< Back";
+            btn.onclick = () => {
+                const prev = simHistory.pop();
+                if (prev) openForm(prev);
+            };
+            container.appendChild(btn);
+        }
+
+        function addExitButton(container) {
+            const btn = document.createElement('button');
+            btn.className = "mc-button w-full px-2 py-2 text-sm text-center text-red-300";
+            btn.textContent = "Exit";
+            btn.onclick = closeMock;
+            container.appendChild(btn);
+        }
+
+        function updateBreadcrumbs() {
+            const bc = document.getElementById('simBreadcrumbs');
+            bc.innerHTML = '';
+            simHistory.forEach(id => {
+                const span = document.createElement('span');
+                span.className = "whitespace-nowrap opacity-50";
+                span.textContent = id + " > ";
+                bc.appendChild(span);
+            });
         }
 
         function closeMock() {
             document.getElementById('mockForm').classList.add('hidden');
             document.getElementById('emptyState').classList.remove('hidden');
+            document.getElementById('simBreadcrumbs').innerHTML = '';
+            simHistory = [];
         }
 
-        // --- The Main Event: Generate the Script ---
-        function generateActionFormScript(db) {
+        // --- Script Generation ---
+        function generateRecursiveScript(db) {
             const dbString = JSON.stringify(db, null, 2);
 
             return `/**
- * Bedrock Recipe Book
- * Generated by Recipe UI Generator
- * * Dependencies: @minecraft/server-ui, @minecraft/server
+ * Recursive Recipe Book
+ * Generated by Recipe Manager Tool
+ * * Usage: 
+ * import { showRecipeForm } from "./recursive_recipe_book.js";
+ * showRecipeForm(player, "your_namespace:item_id");
  */
 
 import { ActionFormData } from "@minecraft/server-ui";
 
-// --- Configuration ---
-// All your parsed recipes live here
+// --- Database ---
 const RECIPE_DB = ${dbString};
 
 /**
- * Shows a recipe form to a player for a specific item.
- * Supports recursive navigation for ingredients that have their own recipes.
- * * @param {Player} player - The player to show the form to.
- * @param {string} itemId - The identifier of the item (e.g., 'os_br:sword').
+ * Shows the recipe form for a specific item.
+ * @param {Player} player - The player entity
+ * @param {string} itemId - The item identifier (e.g., 'os_br:sword')
+ * @param {string[]} history - (Internal) Stack of previous item IDs for navigation
  */
-export function showRecipeForm(player, itemId) {
+export function showRecipeForm(player, itemId, history = []) {
     if (!player || !itemId) return;
 
-    // 1. Fetch Recipe Data
+    const form = new ActionFormData();
     const recipe = RECIPE_DB[itemId];
-
-    // 2. Handle Non-Existent/Vanilla Items
+    
+    // 1. Header & Body
     if (!recipe) {
-        const form = new ActionFormData();
-        const niceName = formatIdentifier(itemId);
-        
+        // Handle Missing/Vanilla
+        const niceName = formatId(itemId);
         form.title(niceName);
-
-        if (itemId.startsWith("minecraft:")) {
-            form.body("§eStandard Vanilla Item§r\\n\\nThis item is obtained through standard Minecraft gameplay (crafting, smelting, or looting).");
-        } else {
-            form.body("§cRecipe Not Found§r\\n\\nNo custom recipe data exists for this item ID.");
-        }
         
-        form.button("Close");
-        form.show(player);
-        return;
+        if (itemId.startsWith("minecraft:")) {
+            form.body("§eStandard Vanilla Item§r\\n\\nObtained via standard gameplay (Crafting Table, Furnace, etc).");
+        } else {
+            form.body("§cRecipe Not Found§r\\n\\nNo custom recipe exists for this item.");
+        }
+    } else {
+        // Handle Valid Custom Recipe
+        form.title(recipe.display_name);
+        
+        // Format body text with colors
+        let bodyText = recipe.script_text
+            .replace("Station:", "§lStation:§r")
+            .replace("Ingredients:", "§lIngredients:§r");
+            
+        form.body(bodyText);
     }
 
-    // 3. Build the Main Recipe Form
-    const form = new ActionFormData();
-    form.title(recipe.display_name);
-    
-    // Use the pre-formatted text from our generator
-    // We add some color codes for better readability in-game
-    const bodyText = \`§lStation:§r \${recipe.crafting_station}\\n\\n§lIngredients:§r\\n\${recipe.script_text.split('Ingredients Required:')[1].trim()}\`;
-    form.body(bodyText);
+    // 2. Sub-Recipe Buttons
+    // These allow drilling down deeper into the recipe tree
+    const subButtons = [];
+    if (recipe) {
+        recipe.ingredients_structured.forEach(ing => {
+            if (RECIPE_DB[ing.item]) {
+                const name = formatId(ing.item);
+                // Store logic to run if clicked
+                subButtons.push({
+                    text: \`Recipe: \${name}\`,
+                    targetId: ing.item
+                });
+                form.button(\`Recipe: \${name}\`); 
+            }
+        });
+    }
 
-    // 4. Detect Sub-Recipes (Recursive Linking)
-    // We scan the ingredients to see if any of them exist in our DB as craftable items
-    const craftableIngredients = [];
-    
-    recipe.ingredients_structured.forEach(ing => {
-        if (RECIPE_DB[ing.item]) {
-            craftableIngredients.push({
-                id: ing.item,
-                name: formatIdentifier(ing.item)
-            });
-        }
-    });
+    // 3. Navigation Buttons
+    let hasBack = false;
+    if (history.length > 0) {
+        form.button("§e< Back§r");
+        hasBack = true;
+    }
 
-    // 5. Add Buttons
-    // Add a button for each sub-recipe
-    craftableIngredients.forEach(sub => {
-        form.button(\`View Recipe: \${sub.name}\`);
-    });
+    form.button("§cExit§r");
 
-    form.button("Close");
-
-    // 6. Handle Response
+    // 4. Show & Handle
     form.show(player).then(response => {
         if (response.canceled) return;
 
-        // Calculate which button was pressed.
-        // The sub-recipe buttons are indices 0 to (length - 1)
-        if (response.selection < craftableIngredients.length) {
-            const selectedSub = craftableIngredients[response.selection];
+        let index = response.selection;
+
+        // A. Check if a Sub-Recipe was clicked
+        if (index < subButtons.length) {
+            const clicked = subButtons[index];
             
-            // RECURSIVE CALL
-            // This opens the form for the ingredient immediately
-            showRecipeForm(player, selectedSub.id);
+            // Push current item to history before moving forward
+            const newHistory = [...history, itemId];
+            
+            // Recursive Call
+            showRecipeForm(player, clicked.targetId, newHistory);
+            return;
         }
+
+        // Adjust index to account for sub-buttons
+        index -= subButtons.length;
+
+        // B. Check Back Button
+        if (hasBack) {
+            if (index === 0) {
+                // Clicked Back
+                const prevItem = history[history.length - 1];
+                const newHistory = history.slice(0, -1); // Pop
+                showRecipeForm(player, prevItem, newHistory);
+                return;
+            }
+            index--; // Skip back button for next check
+        }
+
+        // C. Exit (Remaining index)
+        // Do nothing, form closes automatically
     });
 }
 
-/**
- * Helper: Formats ID to Name (e.g. "my:iron_sword" -> "Iron Sword")
- */
-function formatIdentifier(id) {
+function formatId(id) {
     if (!id) return "Unknown";
     const parts = id.split(':');
     let name = parts.length > 1 ? parts[1] : parts[0];
@@ -457,7 +525,7 @@ function formatIdentifier(id) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = "recipe_book.js";
+            a.download = "recursive_recipe_book.js";
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -475,7 +543,7 @@ function formatIdentifier(id) {
             if (type === 'error') {
                 el.className = 'p-4 rounded-lg bg-red-900/30 text-red-200 border border-red-800';
             } else {
-                el.className = 'p-4 rounded-lg bg-orange-900/30 text-orange-200 border border-orange-800 flex items-center gap-2';
+                el.className = 'p-4 rounded-lg bg-teal-900/30 text-teal-200 border border-teal-800 flex items-center gap-2';
                 el.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-5 h-5"></i> ${msg}`;
             }
             if (type === 'error') el.textContent = msg;
