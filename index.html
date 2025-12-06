@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Recipe Manager Generator</title>
+    <title>Minecraft Recipe UI Generator</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,13 +16,18 @@
 
     <style>
         .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #1e1e1e; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
         
-        .code-preview {
-            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-            line-height: 1.5;
+        .code-block {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background-color: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            white-space: pre;
         }
     </style>
 </head>
@@ -32,23 +37,23 @@
         
         <!-- Header -->
         <header class="mb-8 text-center border-b border-slate-800 pb-8">
-            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500 mb-2 flex items-center justify-center gap-3">
-                <i data-lucide="database-zap" class="w-10 h-10 text-emerald-400"></i>
-                Dynamic Recipe Manager
+            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400 mb-2 flex items-center justify-center gap-3">
+                <i data-lucide="book-open-check" class="w-10 h-10 text-orange-400"></i>
+                Recipe UI Generator
             </h1>
-            <p class="text-slate-400">Upload recipes to generate a smart script with <code>exportRecipe()</code> functionality.</p>
+            <p class="text-slate-400">Generates a recursive <code>ActionFormData</code> script for your Bedrock Addon.</p>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            <!-- Left Column: Upload & Stats -->
+            <!-- Left Column: Controls -->
             <div class="lg:col-span-1 space-y-6">
-                <!-- Upload Zone -->
-                <div class="bg-slate-800 rounded-xl p-6 border-2 border-dashed border-slate-600 hover:border-emerald-500 transition-colors cursor-pointer text-center relative group" id="dropZone">
+                <!-- Upload -->
+                <div class="bg-slate-800 rounded-xl p-6 border-2 border-dashed border-slate-600 hover:border-orange-500 transition-colors cursor-pointer text-center relative group">
                     <input type="file" id="fileInput" accept=".zip" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                     <div class="flex flex-col items-center justify-center gap-4 pointer-events-none">
-                        <div class="bg-slate-700 p-3 rounded-full group-hover:bg-emerald-500/20 group-hover:text-emerald-400 transition-colors">
-                            <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+                        <div class="bg-slate-700 p-3 rounded-full group-hover:bg-orange-500/20 group-hover:text-orange-400 transition-colors">
+                            <i data-lucide="file-archive" class="w-8 h-8"></i>
                         </div>
                         <div>
                             <h3 class="text-lg font-semibold">Upload Resource Pack</h3>
@@ -57,66 +62,84 @@
                     </div>
                 </div>
 
-                <!-- Stats Panel -->
-                <div id="statsPanel" class="hidden bg-slate-800 rounded-xl p-6 border border-slate-700">
-                    <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-4">Scan Results</h3>
-                    <div class="space-y-4">
+                <!-- Stats & Download -->
+                <div id="statsPanel" class="hidden bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Pack Contents</h3>
+                    <div class="space-y-3 mb-6">
                         <div class="flex justify-between items-center">
-                            <span class="text-slate-300">Total Recipes</span>
-                            <span class="text-2xl font-bold text-emerald-400" id="statCount">0</span>
+                            <span class="text-slate-300">Custom Recipes</span>
+                            <span class="text-xl font-bold text-orange-400" id="statCount">0</span>
                         </div>
-                        <div class="h-px bg-slate-700"></div>
                         <div class="flex justify-between items-center">
-                            <span class="text-slate-300">Crafting Stations</span>
-                            <span class="text-2xl font-bold text-blue-400" id="statStations">0</span>
+                            <span class="text-slate-300">Linked Ingredients</span>
+                            <span class="text-xl font-bold text-blue-400" id="statLinks">0</span>
                         </div>
                     </div>
                     
-                    <button onclick="downloadScript()" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all">
-                        <i data-lucide="file-down" class="w-5 h-5"></i>
-                        Download .js Module
+                    <button onclick="downloadScript()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-orange-900/20">
+                        <i data-lucide="download" class="w-5 h-5"></i>
+                        Download recipe_book.js
                     </button>
+                    <p class="text-[10px] text-slate-500 text-center mt-3">Includes <code>ActionFormData</code> logic</p>
                 </div>
             </div>
 
-            <!-- Right Column: Interactive Search & Preview -->
+            <!-- Right Column: Visualizer -->
             <div class="lg:col-span-2 space-y-6">
                 
-                <!-- Status/Loader -->
                 <div id="statusMessage" class="hidden p-4 rounded-lg"></div>
 
-                <!-- Interactive Search Tester -->
-                <div id="searchTester" class="hidden bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                    <div class="p-4 bg-slate-950 border-b border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <!-- Interface Preview -->
+                <div id="interfacePanel" class="hidden bg-slate-800 rounded-xl border border-slate-700 overflow-hidden flex flex-col h-full min-h-[500px]">
+                    <div class="bg-slate-950 p-4 border-b border-slate-700 flex justify-between items-center">
                         <div class="flex items-center gap-2">
-                            <i data-lucide="search-code" class="w-5 h-5 text-purple-400"></i>
-                            <span class="font-semibold text-slate-200">Test exportRecipe() Logic</span>
+                            <i data-lucide="gamepad-2" class="w-5 h-5 text-purple-400"></i>
+                            <span class="font-semibold text-slate-200">Simulation: In-Game UI</span>
                         </div>
-                        <div class="relative w-full sm:w-64">
-                            <input type="text" id="searchInput" placeholder="Enter Item ID (e.g. os_br:sword)..." 
-                                class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-md py-1.5 pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 transition-colors">
-                            <button onclick="runSearch()" class="absolute right-1 top-1 bottom-1 px-2 text-slate-400 hover:text-white">
-                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                            </button>
-                        </div>
+                        <div class="text-xs text-slate-500 font-mono">Simulating @minecraft/server-ui</div>
                     </div>
-                    
-                    <div class="p-6 min-h-[150px] bg-[#1e1e1e]">
-                        <p class="text-slate-500 text-sm font-mono mb-2">// Result output:</p>
-                        <div id="searchResult" class="text-sm font-mono whitespace-pre-wrap text-blue-300">Waiting for input...</div>
+
+                    <!-- Search Mockup -->
+                    <div class="p-4 bg-slate-900 border-b border-slate-800 flex gap-2">
+                        <input type="text" id="simInput" placeholder="Enter Item ID (e.g. os_br:blood_rot_rapier)" 
+                             class="flex-grow bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded px-3 py-2 outline-none focus:border-orange-500 font-mono">
+                        <button onclick="simulateUI()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded text-sm transition-colors">
+                            Open Form
+                        </button>
+                    </div>
+
+                    <!-- The Mock Form -->
+                    <div class="flex-grow p-8 bg-[#1a1a1a] flex justify-center items-start overflow-y-auto custom-scroll">
+                        
+                        <div id="mockForm" class="hidden w-full max-w-md bg-[#c6c6c6] text-[#1f1f1f] border-2 border-[#585858] shadow-[4px_4px_0_0_#000]">
+                            <!-- Form Header -->
+                            <div class="bg-[#1f1f1f] text-white p-2 flex items-center gap-2 border-b-2 border-[#585858]">
+                                <span class="font-minecraft text-lg truncate" id="formTitle">Recipe Title</span>
+                            </div>
+                            
+                            <!-- Form Body -->
+                            <div class="p-4 bg-[#c6c6c6]">
+                                <p class="mb-6 font-minecraft leading-relaxed" id="formBody">
+                                    Recipe description goes here...
+                                </p>
+
+                                <!-- Button Stack -->
+                                <div id="formButtons" class="space-y-2">
+                                    <!-- Buttons injected here -->
+                                </div>
+                                
+                                <button onclick="closeMock()" class="w-full mt-4 bg-[#3c3c3c] text-white border-2 border-[#1e1e1e] border-t-[#5e5e5e] border-l-[#5e5e5e] px-2 py-2 active:border-t-[#1e1e1e] active:border-l-[#1e1e1e] hover:bg-[#4c4c4c]">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="emptyState" class="text-slate-600 flex flex-col items-center mt-20">
+                            <i data-lucide="monitor-play" class="w-16 h-16 opacity-20 mb-4"></i>
+                            <p>Enter an item ID to simulate the form.</p>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Generated Code Preview -->
-                <div id="codePreview" class="hidden bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[500px]">
-                    <div class="p-3 bg-slate-950 border-b border-slate-700 flex justify-between items-center">
-                        <span class="text-slate-400 text-xs font-mono">Preview: recipe_manager.js</span>
-                    </div>
-                    <div class="flex-grow overflow-auto custom-scroll p-4 bg-[#1e1e1e]">
-                        <code id="codeOutput" class="text-xs sm:text-sm text-slate-300 code-preview block"></code>
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
@@ -124,256 +147,306 @@
     <script>
         lucide.createIcons();
 
-        // --- Global State ---
-        let recipeDatabase = {}; // Map: identifier -> recipe object
+        let recipeDatabase = {};
         let generatedScript = "";
 
         // --- Event Listeners ---
         document.getElementById('fileInput').addEventListener('change', handleFileUpload);
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') runSearch();
+        document.getElementById('simInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') simulateUI();
         });
 
-        // --- File Processing ---
+        // --- Processing Logic ---
         async function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            // Reset UI
-            document.getElementById('statsPanel').classList.add('hidden');
-            document.getElementById('searchTester').classList.add('hidden');
-            document.getElementById('codePreview').classList.add('hidden');
-            
-            const status = document.getElementById('statusMessage');
-            status.className = 'p-4 rounded-lg bg-blue-900/30 text-blue-200 border border-blue-800 flex items-center gap-2';
-            status.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5"></i> Scanning zip archive...';
-            status.classList.remove('hidden');
-            lucide.createIcons();
+            resetUI();
+            showStatus('loading', 'Scanning zip for recipe chains...');
 
             try {
                 const zip = new JSZip();
-                const contents = await zip.loadAsync(file);
+                await zip.loadAsync(file);
                 
-                recipeDatabase = {}; // Reset DB
-                const stations = new Set();
-                const filePromises = [];
+                recipeDatabase = {};
+                const promises = [];
+                let linkCount = 0;
 
                 zip.forEach((path, entry) => {
                     if (!entry.dir && entry.name.endsWith('.json') && !entry.name.includes('__MACOSX')) {
-                        filePromises.push(entry.async('string').then(text => {
+                        promises.push(entry.async('string').then(text => {
                             try {
                                 const json = JSON.parse(text);
                                 const processed = processRecipe(json);
                                 if (processed) {
                                     recipeDatabase[processed.raw_id] = processed;
-                                    stations.add(processed.crafting_station);
                                 }
-                            } catch (e) { /* ignore bad json */ }
+                            } catch (e) {}
                         }));
                     }
                 });
 
-                await Promise.all(filePromises);
+                await Promise.all(promises);
+
+                // Second pass to count potential links for stats
+                Object.values(recipeDatabase).forEach(recipe => {
+                    recipe.ingredients_structured.forEach(ing => {
+                        if (recipeDatabase[ing.item]) linkCount++;
+                    });
+                });
 
                 // Update Stats
-                const count = Object.keys(recipeDatabase).length;
-                document.getElementById('statCount').textContent = count;
-                document.getElementById('statStations').textContent = stations.size;
+                document.getElementById('statCount').textContent = Object.keys(recipeDatabase).length;
+                document.getElementById('statLinks').textContent = linkCount;
 
-                // Generate Script Content
-                generatedScript = generateScriptContent(recipeDatabase);
-                document.getElementById('codeOutput').textContent = generatedScript;
+                // Generate Script
+                generatedScript = generateActionFormScript(recipeDatabase);
 
                 // Show UI
-                status.classList.add('hidden');
+                document.getElementById('statusMessage').classList.add('hidden');
                 document.getElementById('statsPanel').classList.remove('hidden');
-                document.getElementById('searchTester').classList.remove('hidden');
-                document.getElementById('codePreview').classList.remove('hidden');
-                
-                // Pre-fill search with a random key if available
+                document.getElementById('interfacePanel').classList.remove('hidden');
+
+                // Auto-fill first item
                 const keys = Object.keys(recipeDatabase);
-                if(keys.length > 0) {
-                    document.getElementById('searchInput').value = keys[0];
-                    runSearch();
-                }
+                if(keys.length > 0) document.getElementById('simInput').value = keys[0];
 
             } catch (err) {
                 console.error(err);
-                status.className = 'p-4 rounded-lg bg-red-900/30 text-red-200 border border-red-800';
-                status.textContent = 'Error: ' + err.message;
+                showStatus('error', err.message);
             }
         }
 
-        // --- Search Logic (Mirrors the exported function) ---
-        function runSearch() {
-            const input = document.getElementById('searchInput').value.trim();
-            const resultBox = document.getElementById('searchResult');
-            
-            if (!input) return;
-
-            // This logic strictly mirrors what we put in the generated script
-            let result;
-
-            if (recipeDatabase[input]) {
-                result = recipeDatabase[input];
-            } else if (input.startsWith("minecraft:")) {
-                result = {
-                    type: "vanilla",
-                    description: "This is a vanilla item obtained normally.",
-                    is_craftable: false 
-                };
-            } else {
-                result = {
-                    type: "missing",
-                    description: "Not craftable or no recipe found.",
-                    is_craftable: false
-                };
-            }
-
-            resultBox.textContent = JSON.stringify(result, null, 2);
-            // Color coding
-            if (result.raw_id) resultBox.className = "text-sm font-mono whitespace-pre-wrap text-emerald-400";
-            else if (result.type === 'vanilla') resultBox.className = "text-sm font-mono whitespace-pre-wrap text-yellow-400";
-            else resultBox.className = "text-sm font-mono whitespace-pre-wrap text-red-400";
-        }
-
-        // --- Generator Functions ---
-
+        // --- Core Recipe Parser (Same logic, new context) ---
         function formatIdentifier(id) {
             if (!id) return "Unknown";
             const parts = id.split(':');
             let name = parts.length > 1 ? parts[1] : parts[0];
             name = name.replace(/_/g, ' ');
-            return name.replace(/\b\w/g, char => char.toUpperCase());
+            return name.replace(/\b\w/g, c => c.toUpperCase());
         }
 
         function processRecipe(json) {
             let type = '';
             let root = null;
 
-            if (json['minecraft:recipe_shaped']) {
-                type = 'shaped'; root = json['minecraft:recipe_shaped'];
-            } else if (json['minecraft:recipe_shapeless']) {
-                type = 'shapeless'; root = json['minecraft:recipe_shapeless'];
-            } else if (json['minecraft:recipe_furnace']) {
-                type = 'furnace'; root = json['minecraft:recipe_furnace'];
-            } else {
-                return null;
-            }
+            if (json['minecraft:recipe_shaped']) { type = 'shaped'; root = json['minecraft:recipe_shaped']; }
+            else if (json['minecraft:recipe_shapeless']) { type = 'shapeless'; root = json['minecraft:recipe_shapeless']; }
+            else if (json['minecraft:recipe_furnace']) { type = 'furnace'; root = json['minecraft:recipe_furnace']; }
+            else return null;
 
-            const rawId = root.description?.identifier || "unknown:unknown";
+            const rawId = root.description?.identifier || "unknown";
             const niceName = formatIdentifier(rawId);
-
+            
             let station = "Crafting Table";
-            if (root.tags && root.tags.length > 0) {
-                const specificTag = root.tags.find(t => t !== 'crafting_table') || root.tags[0];
-                station = formatIdentifier(specificTag);
+            if (root.tags?.length > 0) {
+                const tag = root.tags.find(t => t !== 'crafting_table') || root.tags[0];
+                station = formatIdentifier(tag);
             }
 
-            let ingredientsList = [];
+            let ingredients = [];
+
             if (type === 'shaped') {
                 const keyMap = root.key;
                 const pattern = root.pattern;
                 const counts = {};
                 pattern.forEach(row => {
-                    for (let char of row) {
-                        if (char !== ' ') counts[char] = (counts[char] || 0) + 1;
-                    }
+                    for (let char of row) if (char !== ' ') counts[char] = (counts[char] || 0) + 1;
                 });
                 for (let [char, count] of Object.entries(counts)) {
-                    if (keyMap[char]) {
-                        ingredientsList.push(`${count}x ${formatIdentifier(keyMap[char].item)}`);
-                    }
+                    if (keyMap[char]) ingredients.push({ item: keyMap[char].item, count: count });
                 }
             } else if (type === 'shapeless') {
-                const ingredients = root.ingredients;
-                const itemCounts = {};
-                ingredients.forEach(ing => {
-                    const iName = ing.item;
-                    itemCounts[iName] = (itemCounts[iName] || 0) + (ing.count || 1);
+                const tempMap = {};
+                root.ingredients.forEach(ing => {
+                    tempMap[ing.item] = (tempMap[ing.item] || 0) + (ing.count || 1);
                 });
-                for (let [itemRaw, count] of Object.entries(itemCounts)) {
-                    ingredientsList.push(`${count}x ${formatIdentifier(itemRaw)}`);
-                }
+                for(let [item, count] of Object.entries(tempMap)) ingredients.push({ item, count });
             } else if (type === 'furnace') {
-                ingredientsList.push(`1x ${formatIdentifier(root.input)}`);
-                station = "Furnace";
+                ingredients.push({ item: root.input, count: 1 });
                 if(root.tags.includes('blast_furnace')) station = "Blast Furnace";
-                if(root.tags.includes('smoker')) station = "Smoker";
             }
 
-            const ingredientsString = ingredientsList.join(', ');
-            const scriptText = `To craft ${niceName}, use the ${station}. \nRequires: ${ingredientsString}.`;
+            const ingText = ingredients.map(i => `${i.count}x ${formatIdentifier(i.item)}`).join(', ');
+            const text = `Station: ${station}\n\nIngredients Required:\n${ingText}`;
 
             return {
                 raw_id: rawId,
                 display_name: niceName,
                 crafting_station: station,
-                ingredients: ingredientsList,
-                script_text: scriptText
+                ingredients_structured: ingredients,
+                script_text: text
             };
         }
 
-        function generateScriptContent(dataMap) {
-            // We stringify the data map but keep it pretty
-            const jsonString = JSON.stringify(dataMap, null, 2);
-            
+        // --- Simulator Logic (Mirroring the generated script) ---
+        function simulateUI() {
+            const input = document.getElementById('simInput').value.trim();
+            if (!input) return;
+
+            const mockForm = document.getElementById('mockForm');
+            const empty = document.getElementById('emptyState');
+            const title = document.getElementById('formTitle');
+            const body = document.getElementById('formBody');
+            const btnContainer = document.getElementById('formButtons');
+
+            // Find data
+            const recipe = recipeDatabase[input];
+
+            empty.classList.add('hidden');
+            mockForm.classList.remove('hidden');
+            btnContainer.innerHTML = '';
+
+            if (!recipe) {
+                // Vanilla or Missing Logic
+                if (input.startsWith('minecraft:')) {
+                    title.textContent = formatIdentifier(input);
+                    body.textContent = "This is a standard Vanilla item.\nIt does not have a custom recipe file in this pack.";
+                } else {
+                    title.textContent = "Item Not Found";
+                    body.textContent = `No recipe found for ID: ${input}`;
+                }
+                return;
+            }
+
+            // Valid Recipe
+            title.textContent = recipe.display_name;
+            body.textContent = recipe.script_text; // Pre-formatted text
+
+            // Generate "Recursive" Buttons
+            // In the real script, we check if ingredients exist in DB
+            const linkedIngredients = recipe.ingredients_structured.filter(ing => recipeDatabase[ing.item]);
+
+            if (linkedIngredients.length > 0) {
+                const label = document.createElement('div');
+                label.className = "text-xs font-bold text-slate-700 uppercase mt-4 mb-2";
+                label.textContent = "Sub-Recipes Available:";
+                btnContainer.appendChild(label);
+            }
+
+            linkedIngredients.forEach(ing => {
+                const btn = document.createElement('button');
+                const name = formatIdentifier(ing.item);
+                btn.className = "w-full text-left bg-[#3c3c3c] text-white border-2 border-[#1e1e1e] border-t-[#5e5e5e] border-l-[#5e5e5e] px-3 py-2 text-sm mb-2 hover:bg-[#4c4c4c] active:border-t-[#1e1e1e] active:border-l-[#1e1e1e] flex items-center justify-between";
+                btn.innerHTML = `<span>Recipe: ${name}</span> <i data-lucide="chevron-right" class="w-4 h-4"></i>`;
+                
+                // Recursive simulation click
+                btn.onclick = () => {
+                    document.getElementById('simInput').value = ing.item;
+                    simulateUI();
+                };
+                
+                btnContainer.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        function closeMock() {
+            document.getElementById('mockForm').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+        }
+
+        // --- The Main Event: Generate the Script ---
+        function generateActionFormScript(db) {
+            const dbString = JSON.stringify(db, null, 2);
+
             return `/**
- * Recipe Manager
- * Auto-generated by Dynamic Recipe Manager
- * * Usage:
- * import { exportRecipe } from './recipe_manager.js';
- * const recipe = exportRecipe('my_namespace:sword');
+ * Bedrock Recipe Book
+ * Generated by Recipe UI Generator
+ * * Dependencies: @minecraft/server-ui, @minecraft/server
  */
 
-// --- Recipe Database ---
-const RECIPE_DB = ${jsonString};
+import { ActionFormData } from "@minecraft/server-ui";
+
+// --- Configuration ---
+// All your parsed recipes live here
+const RECIPE_DB = ${dbString};
 
 /**
- * Searches for a recipe by Item ID/Block ID.
- * @param {string} itemId - The full identifier (e.g. "namespace:item_name")
- * @returns {object|string} - The recipe object, or a status object if not found.
+ * Shows a recipe form to a player for a specific item.
+ * Supports recursive navigation for ingredients that have their own recipes.
+ * * @param {Player} player - The player to show the form to.
+ * @param {string} itemId - The identifier of the item (e.g., 'os_br:sword').
  */
-export function exportRecipe(itemId) {
-    if (!itemId || typeof itemId !== 'string') {
-        return { 
-            status: "error", 
-            message: "Invalid Item ID provided." 
-        };
+export function showRecipeForm(player, itemId) {
+    if (!player || !itemId) return;
+
+    // 1. Fetch Recipe Data
+    const recipe = RECIPE_DB[itemId];
+
+    // 2. Handle Non-Existent/Vanilla Items
+    if (!recipe) {
+        const form = new ActionFormData();
+        const niceName = formatIdentifier(itemId);
+        
+        form.title(niceName);
+
+        if (itemId.startsWith("minecraft:")) {
+            form.body("§eStandard Vanilla Item§r\\n\\nThis item is obtained through standard Minecraft gameplay (crafting, smelting, or looting).");
+        } else {
+            form.body("§cRecipe Not Found§r\\n\\nNo custom recipe data exists for this item ID.");
+        }
+        
+        form.button("Close");
+        form.show(player);
+        return;
     }
 
-    // 1. Check for exact match in our custom recipes
-    if (RECIPE_DB[itemId]) {
-        return RECIPE_DB[itemId];
-    }
+    // 3. Build the Main Recipe Form
+    const form = new ActionFormData();
+    form.title(recipe.display_name);
+    
+    // Use the pre-formatted text from our generator
+    // We add some color codes for better readability in-game
+    const bodyText = \`§lStation:§r \${recipe.crafting_station}\\n\\n§lIngredients:§r\\n\${recipe.script_text.split('Ingredients Required:')[1].trim()}\`;
+    form.body(bodyText);
 
-    // 2. Check if it is a Vanilla Minecraft item
-    // Vanilla items generally start with "minecraft:", but have no custom recipe file here
-    if (itemId.startsWith("minecraft:")) {
-        return {
-            status: "vanilla",
-            display_name: formatIdentifier(itemId),
-            message: "This is a vanilla item obtained normally.",
-            is_craftable: false
-        };
-    }
+    // 4. Detect Sub-Recipes (Recursive Linking)
+    // We scan the ingredients to see if any of them exist in our DB as craftable items
+    const craftableIngredients = [];
+    
+    recipe.ingredients_structured.forEach(ing => {
+        if (RECIPE_DB[ing.item]) {
+            craftableIngredients.push({
+                id: ing.item,
+                name: formatIdentifier(ing.item)
+            });
+        }
+    });
 
-    // 3. Fallback: Not found
-    return {
-        status: "missing",
-        message: "Not craftable or no recipe found.",
-        is_craftable: false
-    };
+    // 5. Add Buttons
+    // Add a button for each sub-recipe
+    craftableIngredients.forEach(sub => {
+        form.button(\`View Recipe: \${sub.name}\`);
+    });
+
+    form.button("Close");
+
+    // 6. Handle Response
+    form.show(player).then(response => {
+        if (response.canceled) return;
+
+        // Calculate which button was pressed.
+        // The sub-recipe buttons are indices 0 to (length - 1)
+        if (response.selection < craftableIngredients.length) {
+            const selectedSub = craftableIngredients[response.selection];
+            
+            // RECURSIVE CALL
+            // This opens the form for the ingredient immediately
+            showRecipeForm(player, selectedSub.id);
+        }
+    });
 }
 
 /**
- * Helper to format names on the fly for vanilla items
+ * Helper: Formats ID to Name (e.g. "my:iron_sword" -> "Iron Sword")
  */
 function formatIdentifier(id) {
+    if (!id) return "Unknown";
     const parts = id.split(':');
     let name = parts.length > 1 ? parts[1] : parts[0];
     name = name.replace(/_/g, ' ');
-    return name.replace(/\\b\\w/g, char => char.toUpperCase());
+    return name.replace(/\\b\\w/g, c => c.toUpperCase());
 }
 `;
         }
@@ -384,11 +457,29 @@ function formatIdentifier(id) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = "recipe_manager.js";
+            a.download = "recipe_book.js";
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        }
+
+        function resetUI() {
+            document.getElementById('statsPanel').classList.add('hidden');
+            document.getElementById('interfacePanel').classList.add('hidden');
+        }
+
+        function showStatus(type, msg) {
+            const el = document.getElementById('statusMessage');
+            el.classList.remove('hidden');
+            if (type === 'error') {
+                el.className = 'p-4 rounded-lg bg-red-900/30 text-red-200 border border-red-800';
+            } else {
+                el.className = 'p-4 rounded-lg bg-orange-900/30 text-orange-200 border border-orange-800 flex items-center gap-2';
+                el.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-5 h-5"></i> ${msg}`;
+            }
+            if (type === 'error') el.textContent = msg;
+            lucide.createIcons();
         }
     </script>
 </body>
