@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Recipe Manager Generator</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- JSZip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #1e1e1e; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        
+        .code-preview {
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans flex flex-col">
+
+    <div class="container mx-auto px-4 py-8 max-w-6xl flex-grow">
+        
+        <!-- Header -->
+        <header class="mb-8 text-center border-b border-slate-800 pb-8">
+            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500 mb-2 flex items-center justify-center gap-3">
+                <i data-lucide="database-zap" class="w-10 h-10 text-emerald-400"></i>
+                Dynamic Recipe Manager
+            </h1>
+            <p class="text-slate-400">Upload recipes to generate a smart script with <code>exportRecipe()</code> functionality.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Upload & Stats -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Upload Zone -->
+                <div class="bg-slate-800 rounded-xl p-6 border-2 border-dashed border-slate-600 hover:border-emerald-500 transition-colors cursor-pointer text-center relative group" id="dropZone">
+                    <input type="file" id="fileInput" accept=".zip" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <div class="flex flex-col items-center justify-center gap-4 pointer-events-none">
+                        <div class="bg-slate-700 p-3 rounded-full group-hover:bg-emerald-500/20 group-hover:text-emerald-400 transition-colors">
+                            <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold">Upload Resource Pack</h3>
+                            <p class="text-xs text-slate-400 mt-1">.zip files only</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Panel -->
+                <div id="statsPanel" class="hidden bg-slate-800 rounded-xl p-6 border border-slate-700">
+                    <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-4">Scan Results</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-300">Total Recipes</span>
+                            <span class="text-2xl font-bold text-emerald-400" id="statCount">0</span>
+                        </div>
+                        <div class="h-px bg-slate-700"></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-300">Crafting Stations</span>
+                            <span class="text-2xl font-bold text-blue-400" id="statStations">0</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="downloadScript()" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="file-down" class="w-5 h-5"></i>
+                        Download .js Module
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Interactive Search & Preview -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Status/Loader -->
+                <div id="statusMessage" class="hidden p-4 rounded-lg"></div>
+
+                <!-- Interactive Search Tester -->
+                <div id="searchTester" class="hidden bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                    <div class="p-4 bg-slate-950 border-b border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="search-code" class="w-5 h-5 text-purple-400"></i>
+                            <span class="font-semibold text-slate-200">Test exportRecipe() Logic</span>
+                        </div>
+                        <div class="relative w-full sm:w-64">
+                            <input type="text" id="searchInput" placeholder="Enter Item ID (e.g. os_br:sword)..." 
+                                class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-md py-1.5 pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 transition-colors">
+                            <button onclick="runSearch()" class="absolute right-1 top-1 bottom-1 px-2 text-slate-400 hover:text-white">
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 min-h-[150px] bg-[#1e1e1e]">
+                        <p class="text-slate-500 text-sm font-mono mb-2">// Result output:</p>
+                        <div id="searchResult" class="text-sm font-mono whitespace-pre-wrap text-blue-300">Waiting for input...</div>
+                    </div>
+                </div>
+
+                <!-- Generated Code Preview -->
+                <div id="codePreview" class="hidden bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[500px]">
+                    <div class="p-3 bg-slate-950 border-b border-slate-700 flex justify-between items-center">
+                        <span class="text-slate-400 text-xs font-mono">Preview: recipe_manager.js</span>
+                    </div>
+                    <div class="flex-grow overflow-auto custom-scroll p-4 bg-[#1e1e1e]">
+                        <code id="codeOutput" class="text-xs sm:text-sm text-slate-300 code-preview block"></code>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // --- Global State ---
+        let recipeDatabase = {}; // Map: identifier -> recipe object
+        let generatedScript = "";
+
+        // --- Event Listeners ---
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') runSearch();
+        });
+
+        // --- File Processing ---
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Reset UI
+            document.getElementById('statsPanel').classList.add('hidden');
+            document.getElementById('searchTester').classList.add('hidden');
+            document.getElementById('codePreview').classList.add('hidden');
+            
+            const status = document.getElementById('statusMessage');
+            status.className = 'p-4 rounded-lg bg-blue-900/30 text-blue-200 border border-blue-800 flex items-center gap-2';
+            status.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5"></i> Scanning zip archive...';
+            status.classList.remove('hidden');
+            lucide.createIcons();
+
+            try {
+                const zip = new JSZip();
+                const contents = await zip.loadAsync(file);
+                
+                recipeDatabase = {}; // Reset DB
+                const stations = new Set();
+                const filePromises = [];
+
+                zip.forEach((path, entry) => {
+                    if (!entry.dir && entry.name.endsWith('.json') && !entry.name.includes('__MACOSX')) {
+                        filePromises.push(entry.async('string').then(text => {
+                            try {
+                                const json = JSON.parse(text);
+                                const processed = processRecipe(json);
+                                if (processed) {
+                                    recipeDatabase[processed.raw_id] = processed;
+                                    stations.add(processed.crafting_station);
+                                }
+                            } catch (e) { /* ignore bad json */ }
+                        }));
+                    }
+                });
+
+                await Promise.all(filePromises);
+
+                // Update Stats
+                const count = Object.keys(recipeDatabase).length;
+                document.getElementById('statCount').textContent = count;
+                document.getElementById('statStations').textContent = stations.size;
+
+                // Generate Script Content
+                generatedScript = generateScriptContent(recipeDatabase);
+                document.getElementById('codeOutput').textContent = generatedScript;
+
+                // Show UI
+                status.classList.add('hidden');
+                document.getElementById('statsPanel').classList.remove('hidden');
+                document.getElementById('searchTester').classList.remove('hidden');
+                document.getElementById('codePreview').classList.remove('hidden');
+                
+                // Pre-fill search with a random key if available
+                const keys = Object.keys(recipeDatabase);
+                if(keys.length > 0) {
+                    document.getElementById('searchInput').value = keys[0];
+                    runSearch();
+                }
+
+            } catch (err) {
+                console.error(err);
+                status.className = 'p-4 rounded-lg bg-red-900/30 text-red-200 border border-red-800';
+                status.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        // --- Search Logic (Mirrors the exported function) ---
+        function runSearch() {
+            const input = document.getElementById('searchInput').value.trim();
+            const resultBox = document.getElementById('searchResult');
+            
+            if (!input) return;
+
+            // This logic strictly mirrors what we put in the generated script
+            let result;
+
+            if (recipeDatabase[input]) {
+                result = recipeDatabase[input];
+            } else if (input.startsWith("minecraft:")) {
+                result = {
+                    type: "vanilla",
+                    description: "This is a vanilla item obtained normally.",
+                    is_craftable: false 
+                };
+            } else {
+                result = {
+                    type: "missing",
+                    description: "Not craftable or no recipe found.",
+                    is_craftable: false
+                };
+            }
+
+            resultBox.textContent = JSON.stringify(result, null, 2);
+            // Color coding
+            if (result.raw_id) resultBox.className = "text-sm font-mono whitespace-pre-wrap text-emerald-400";
+            else if (result.type === 'vanilla') resultBox.className = "text-sm font-mono whitespace-pre-wrap text-yellow-400";
+            else resultBox.className = "text-sm font-mono whitespace-pre-wrap text-red-400";
+        }
+
+        // --- Generator Functions ---
+
+        function formatIdentifier(id) {
+            if (!id) return "Unknown";
+            const parts = id.split(':');
+            let name = parts.length > 1 ? parts[1] : parts[0];
+            name = name.replace(/_/g, ' ');
+            return name.replace(/\b\w/g, char => char.toUpperCase());
+        }
+
+        function processRecipe(json) {
+            let type = '';
+            let root = null;
+
+            if (json['minecraft:recipe_shaped']) {
+                type = 'shaped'; root = json['minecraft:recipe_shaped'];
+            } else if (json['minecraft:recipe_shapeless']) {
+                type = 'shapeless'; root = json['minecraft:recipe_shapeless'];
+            } else if (json['minecraft:recipe_furnace']) {
+                type = 'furnace'; root = json['minecraft:recipe_furnace'];
+            } else {
+                return null;
+            }
+
+            const rawId = root.description?.identifier || "unknown:unknown";
+            const niceName = formatIdentifier(rawId);
+
+            let station = "Crafting Table";
+            if (root.tags && root.tags.length > 0) {
+                const specificTag = root.tags.find(t => t !== 'crafting_table') || root.tags[0];
+                station = formatIdentifier(specificTag);
+            }
+
+            let ingredientsList = [];
+            if (type === 'shaped') {
+                const keyMap = root.key;
+                const pattern = root.pattern;
+                const counts = {};
+                pattern.forEach(row => {
+                    for (let char of row) {
+                        if (char !== ' ') counts[char] = (counts[char] || 0) + 1;
+                    }
+                });
+                for (let [char, count] of Object.entries(counts)) {
+                    if (keyMap[char]) {
+                        ingredientsList.push(`${count}x ${formatIdentifier(keyMap[char].item)}`);
+                    }
+                }
+            } else if (type === 'shapeless') {
+                const ingredients = root.ingredients;
+                const itemCounts = {};
+                ingredients.forEach(ing => {
+                    const iName = ing.item;
+                    itemCounts[iName] = (itemCounts[iName] || 0) + (ing.count || 1);
+                });
+                for (let [itemRaw, count] of Object.entries(itemCounts)) {
+                    ingredientsList.push(`${count}x ${formatIdentifier(itemRaw)}`);
+                }
+            } else if (type === 'furnace') {
+                ingredientsList.push(`1x ${formatIdentifier(root.input)}`);
+                station = "Furnace";
+                if(root.tags.includes('blast_furnace')) station = "Blast Furnace";
+                if(root.tags.includes('smoker')) station = "Smoker";
+            }
+
+            const ingredientsString = ingredientsList.join(', ');
+            const scriptText = `To craft ${niceName}, use the ${station}. \nRequires: ${ingredientsString}.`;
+
+            return {
+                raw_id: rawId,
+                display_name: niceName,
+                crafting_station: station,
+                ingredients: ingredientsList,
+                script_text: scriptText
+            };
+        }
+
+        function generateScriptContent(dataMap) {
+            // We stringify the data map but keep it pretty
+            const jsonString = JSON.stringify(dataMap, null, 2);
+            
+            return `/**
+ * Recipe Manager
+ * Auto-generated by Dynamic Recipe Manager
+ * * Usage:
+ * import { exportRecipe } from './recipe_manager.js';
+ * const recipe = exportRecipe('my_namespace:sword');
+ */
+
+// --- Recipe Database ---
+const RECIPE_DB = ${jsonString};
+
+/**
+ * Searches for a recipe by Item ID/Block ID.
+ * @param {string} itemId - The full identifier (e.g. "namespace:item_name")
+ * @returns {object|string} - The recipe object, or a status object if not found.
+ */
+export function exportRecipe(itemId) {
+    if (!itemId || typeof itemId !== 'string') {
+        return { 
+            status: "error", 
+            message: "Invalid Item ID provided." 
+        };
+    }
+
+    // 1. Check for exact match in our custom recipes
+    if (RECIPE_DB[itemId]) {
+        return RECIPE_DB[itemId];
+    }
+
+    // 2. Check if it is a Vanilla Minecraft item
+    // Vanilla items generally start with "minecraft:", but have no custom recipe file here
+    if (itemId.startsWith("minecraft:")) {
+        return {
+            status: "vanilla",
+            display_name: formatIdentifier(itemId),
+            message: "This is a vanilla item obtained normally.",
+            is_craftable: false
+        };
+    }
+
+    // 3. Fallback: Not found
+    return {
+        status: "missing",
+        message: "Not craftable or no recipe found.",
+        is_craftable: false
+    };
+}
+
+/**
+ * Helper to format names on the fly for vanilla items
+ */
+function formatIdentifier(id) {
+    const parts = id.split(':');
+    let name = parts.length > 1 ? parts[1] : parts[0];
+    name = name.replace(/_/g, ' ');
+    return name.replace(/\\b\\w/g, char => char.toUpperCase());
+}
+`;
+        }
+
+        function downloadScript() {
+            if (!generatedScript) return;
+            const blob = new Blob([generatedScript], { type: "text/javascript" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "recipe_manager.js";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
